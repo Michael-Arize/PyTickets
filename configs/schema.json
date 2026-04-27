@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ticket Site Configuration",
+  "type": "object",
+  "required": ["name", "base_url", "auth", "selectors"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Human-readable site name"
+    },
+    "base_url": {
+      "type": "string",
+      "description": "Base URL of the ticket website"
+    },
+    "auth": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["facebook", "email_password", "oauth", "api_key", "none"],
+          "description": "Authentication method type"
+        },
+        "credentials": {
+          "type": "object",
+          "description": "Auth-specific credentials (stored as env var references like 'env:VAR_NAME')"
+        }
+      }
+    },
+    "selectors": {
+      "type": "object",
+      "description": "CSS and XPath selectors for ticket elements",
+      "properties": {
+        "sold_tickets_section_xpath": {
+          "type": "string",
+          "description": "XPath to find section containing sold tickets"
+        },
+        "ticket_array_xpath": {
+          "type": "string",
+          "description": "XPath to ticket list items"
+        },
+        "ticket_link_xpath": {
+          "type": "string",
+          "description": "XPath to extract ticket link"
+        },
+        "buy_button_class": {
+          "type": "string",
+          "description": "CSS class of buy button"
+        },
+        "no_tickets_text": {
+          "type": "array",
+          "description": "Text indicators when no tickets available",
+          "items": {"type": "string"}
+        },
+        "success_indicators": {
+          "type": "array",
+          "description": "Text indicators for successful ticket reservation",
+          "items": {"type": "string"}
+        },
+        "error_indicators": {
+          "type": "object",
+          "description": "Text patterns for various error conditions"
+        }
+      }
+    },
+    "proxy_required": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether proxy rotation is required for this site"
+    },
+    "rate_limit": {
+      "type": "object",
+      "properties": {
+        "min_delay": {
+          "type": "number",
+          "description": "Minimum delay between requests in seconds"
+        },
+        "max_delay": {
+          "type": "number",
+          "description": "Maximum delay between requests in seconds"
+        }
+      }
+    }
+  }
+}

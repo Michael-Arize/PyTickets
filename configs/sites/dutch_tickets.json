@@ -1,0 +1,40 @@
+{
+  "name": "Dutch Tickets",
+  "base_url": "env:ticket_site",
+  "auth": {
+    "type": "facebook",
+    "credentials": {
+      "email": "env:fb_email",
+      "password": "env:fb_password"
+    }
+  },
+  "selectors": {
+    "sold_tickets_section_xpath": "//section[1]/h2",
+    "sold_tickets_link_xpath_offered": "//section[2]/div/article/div[1]/h3/a/@href",
+    "sold_tickets_link_xpath_sold": "//section[1]/div/article/div[1]/h3/a/@href",
+    "ticket_array_xpath": "//body/div[4]/div/div[2]/article",
+    "ticket_link_xpath": "div[1]/h3/a/@href",
+    "buy_button_class": "btn-buy",
+    "login_link_text": "Inloggen",
+    "email_input_name": "email",
+    "password_input_name": "pass",
+    "login_button_name": "login",
+    "no_tickets_text": [
+      "Plaats een oproep"
+    ],
+    "other_available_text": "Andere beschikbare tickets",
+    "rate_limit_text": "Oeps, iets te vaak vernieuwd",
+    "ticket_already_reserved_text": "Koop e-ticket",
+    "success_indicators": [
+      "Pay with iDEAL",
+      "Betaal met iDEAL",
+      "Betaalmethode"
+    ],
+    "facebook_error_text": "Je hebt ons geen toegang gegeven tot je Facebook account"
+  },
+  "proxy_required": true,
+  "rate_limit": {
+    "min_delay": 2.5,
+    "max_delay": 4.3
+  }
+}
