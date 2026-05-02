@@ -297,6 +297,19 @@ class RefactoredTicketsSpider(scrapy.Spider):
 
     def _build_ticket_data(self, ticket, ticket_url):
         """Create normalized ticket metadata from a selector."""
+        if isinstance(ticket, dict):
+            metadata = ticket.get("metadata", {}).copy()
+            metadata.setdefault("site_base_url", self.base_url)
+            return {
+                "url": ticket_url,
+                "site": self.site_config.get("name", "Unknown"),
+                "price": ticket.get("price"),
+                "seat_type": ticket.get("seat_type") or ticket.get("title"),
+                "date": ticket.get("date"),
+                "quantity": ticket.get("quantity"),
+                "metadata": metadata,
+            }
+
         text_values = ticket.xpath('.//text()').extract() if hasattr(ticket, 'xpath') else []
         clean_text = TextHelper.clean_text(' '.join(text_values))
         return {

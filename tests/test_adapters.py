@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tests for adapters and authenticators."""
 import pytest
+from scrapy.http import HtmlResponse
+
 from ticketCrawler.adapters.factory import AdapterFactory
 from ticketCrawler.auth.factory import AuthenticatorFactory
 
@@ -14,6 +16,8 @@ class TestAdapterFactory:
         assert isinstance(adapters, list)
         assert 'dutch_tickets' in adapters
         assert 'eventim' in adapters
+        assert 'ticketmaster' in adapters
+        assert 'seatgeek' in adapters
     
     def test_create_dutch_tickets_adapter(self):
         """Test creating Dutch tickets adapter."""
@@ -41,6 +45,30 @@ class TestAdapterFactory:
         
         adapter = AdapterFactory.create_adapter('eventim', config)
         assert adapter is not None
+
+    def test_create_ticketmaster_adapter(self):
+        config = {
+            'base_url': 'https://www.ticketmaster.com',
+            'auth': {'type': 'none', 'credentials': {}},
+            'selectors': {},
+            'proxy_required': False,
+            'rate_limit': {'min_delay': 1, 'max_delay': 2}
+        }
+
+        adapter = AdapterFactory.create_adapter('ticketmaster', config)
+        assert adapter is not None
+
+    def test_create_seatgeek_adapter(self):
+        config = {
+            'base_url': 'https://seatgeek.com',
+            'auth': {'type': 'none', 'credentials': {}},
+            'selectors': {},
+            'proxy_required': False,
+            'rate_limit': {'min_delay': 1, 'max_delay': 2}
+        }
+
+        adapter = AdapterFactory.create_adapter('seatgeek', config)
+        assert adapter is not None
     
     def test_invalid_adapter_raises_error(self):
         """Test that invalid adapter raises ValueError."""
@@ -65,6 +93,81 @@ class TestAdapterFactory:
         assert hasattr(adapter, 'get_ticket_url')
         assert hasattr(adapter, 'buy_ticket')
         assert hasattr(adapter, 'check_reservation_success')
+
+    def test_ticketmaster_extracts_event_links(self):
+        adapter = AdapterFactory.create_adapter('ticketmaster', {
+            'base_url': 'https://www.ticketmaster.com',
+            'selectors': {},
+        })
+        response = HtmlResponse(
+            url='https://www.ticketmaster.com/search',
+            body=b'<a href="/event/ABC123">Concert Tickets</a>',
+            encoding='utf-8',
+        )
+
+        tickets = adapter.extract_tickets(response)
+
+        assert tickets[0]['url'] == 'https://www.ticketmaster.com/event/ABC123'
+
+    def test_ticketmaster_extracts_discovery_api_events(self):
+        adapter = AdapterFactory.create_adapter('ticketmaster', {
+            'base_url': 'https://www.ticketmaster.com',
+            'selectors': {},
+        })
+        body = b'''
+        {"_embedded":{"events":[{"name":"Concert","url":"https://www.ticketmaster.com/event/ABC123","priceRanges":[{"min":40}],"dates":{"start":{"localDate":"2026-05-02"}}}]}}
+        '''
+        response = HtmlResponse(
+            url='https://app.ticketmaster.com/discovery/v2/events.json',
+            body=body,
+            encoding='utf-8',
+        )
+
+        tickets = adapter.extract_tickets(response)
+
+        assert tickets[0]['url'] == 'https://www.ticketmaster.com/event/ABC123'
+        assert tickets[0]['price'] == 40
+
+    def test_seatgeek_extracts_next_data_links(self):
+        adapter = AdapterFactory.create_adapter('seatgeek', {
+            'base_url': 'https://seatgeek.com',
+            'selectors': {},
+        })
+        body = b'''
+        <script id="__NEXT_DATA__" type="application/json">
+        {"props":{"event":{"title":"Game","url":"https://seatgeek.com/game-tickets","stats":{"lowest_price":25,"listing_count":4}}}}
+        </script>
+        '''
+        response = HtmlResponse(
+            url='https://seatgeek.com/search',
+            body=body,
+            encoding='utf-8',
+        )
+
+        tickets = adapter.extract_tickets(response)
+
+        assert tickets[0]['url'] == 'https://seatgeek.com/game-tickets'
+        assert tickets[0]['price'] == 25
+        assert tickets[0]['quantity'] == 4
+
+    def test_seatgeek_extracts_api_events(self):
+        adapter = AdapterFactory.create_adapter('seatgeek', {
+            'base_url': 'https://seatgeek.com',
+            'selectors': {},
+        })
+        body = b'''
+        {"events":[{"title":"Game","url":"https://seatgeek.com/game-tickets","datetime_local":"2026-05-02T19:00:00","stats":{"lowest_price":25,"listing_count":4}}]}
+        '''
+        response = HtmlResponse(
+            url='https://api.seatgeek.com/2/events',
+            body=body,
+            encoding='utf-8',
+        )
+
+        tickets = adapter.extract_tickets(response)
+
+        assert tickets[0]['url'] == 'https://seatgeek.com/game-tickets'
+        assert tickets[0]['price'] == 25
 
 
 class TestAuthenticatorFactory:

@@ -2,6 +2,8 @@
 """Factory for creating site adapters."""
 from .site_adapters.dutch_tickets import DutchTicketsAdapter
 from .site_adapters.eventim import EventimAdapter
+from .site_adapters.ticketmaster import TicketmasterAdapter
+from .site_adapters.seatgeek import SeatGeekAdapter
 
 
 class AdapterFactory:
@@ -11,6 +13,8 @@ class AdapterFactory:
     ADAPTERS = {
         'dutch_tickets': DutchTicketsAdapter,
         'eventim': EventimAdapter,
+        'ticketmaster': TicketmasterAdapter,
+        'seatgeek': SeatGeekAdapter,
     }
     
     @classmethod

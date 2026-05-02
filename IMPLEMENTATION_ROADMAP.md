@@ -25,6 +25,7 @@ Phase 2 is now implemented in code:
 - Batch notification mode: `PYTICKETS_NOTIFY_MODE=first|batch`
 - Central env loading: `ticketCrawler/config/app_config.py` and `.env.example`
 - Legacy spiders deprecated as Python 3 compatibility stubs
+- Ticketmaster and SeatGeek added as first-class discovery adapters
 
 ---
 

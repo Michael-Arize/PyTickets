@@ -44,6 +44,9 @@ class ConfigLoader:
     def _substitute_env_vars(self, obj):
         """Recursively substitute environment variable references in config."""
         if isinstance(obj, str):
+            if obj.startswith("env_optional:"):
+                env_var = obj[13:]
+                return os.environ.get(env_var)
             if obj.startswith("env:"):
                 env_var = obj[4:]  # Remove "env:" prefix
                 if env_var not in os.environ:

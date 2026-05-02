@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for configuration system."""
 import os
+import json
 import pytest
 from pathlib import Path
 from ticketCrawler.config.config_loader import ConfigLoader
@@ -89,6 +90,22 @@ class TestEnvironmentVariableSubstitution:
         # This would only happen if a config references a non-existent env var
         # and it's not overridden elsewhere
         pass
+
+    def test_optional_env_var_substitution(self, tmp_path):
+        """Test optional env vars resolve to None when unset."""
+        config_path = tmp_path / "optional.json"
+        config_path.write_text(json.dumps({
+            "name": "Optional",
+            "base_url": "https://example.com",
+            "auth": {"type": "none"},
+            "selectors": {},
+            "api": {"client_id": "env_optional:DOES_NOT_EXIST"}
+        }), encoding="utf-8")
+
+        loader = ConfigLoader(config_dir=tmp_path)
+        config = loader.get_config("optional")
+
+        assert config["api"]["client_id"] is None
 
 
 if __name__ == '__main__':
