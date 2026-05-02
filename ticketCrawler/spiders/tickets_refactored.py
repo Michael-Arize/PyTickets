@@ -84,7 +84,7 @@ class RefactoredTicketsSpider(scrapy.Spider):
         if self.authenticator:
             self._authenticate()
 
-        self.start_urls = [url] if url else []
+        self.start_urls = [self._normalize_start_url(url)] if url else []
         self.first_sold_ticket_url = None
         self.successful = False
         self.iteration = 0
@@ -195,6 +195,16 @@ class RefactoredTicketsSpider(scrapy.Spider):
                 callback=self.visit_first_sold_ticket,
                 dont_filter=True
             )
+
+    def _normalize_start_url(self, url):
+        """Let adapters rewrite public URLs to official API URLs when configured."""
+        normalizer = getattr(self.adapter, "normalize_start_url", None)
+        if not normalizer:
+            return url
+        normalized = normalizer(url)
+        if normalized != url:
+            self.app_logger.info(f"Normalized start URL for {self.site_name}: {normalized}")
+        return normalized
 
     def visit_first_sold_ticket(self, response):
         """Find and visit the first sold ticket listing."""
