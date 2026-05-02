@@ -78,6 +78,18 @@ export PYTICKETS_SCHEDULE_INTERVAL_HOURS=2
 python run_scheduler.py
 ```
 
+### API and Dashboard
+Phase 2 adds a small REST API and operational dashboard:
+
+```
+python run_api.py
+```
+
+Then open `http://localhost:8000`.
+
+The API exposes health, sites, tickets, crawl runs, jobs, one-off crawl starts,
+cache clearing, and notification tests under `/api/...`.
+
 ### Demo
 ![Screen Capture](https://github.com/Nedervino/TicketCrawler/blob/master/screenCapture.gif?raw=true)
 

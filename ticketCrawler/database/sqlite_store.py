@@ -55,6 +55,18 @@ class Database:
                     metadata TEXT
                 );
 
+                CREATE TABLE IF NOT EXISTS scheduled_jobs (
+                    id TEXT PRIMARY KEY,
+                    site TEXT NOT NULL,
+                    url TEXT,
+                    interval_hours REAL NOT NULL,
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    last_run_at TEXT,
+                    last_status TEXT
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_tickets_site_found
                     ON tickets(site, found_at);
                 CREATE INDEX IF NOT EXISTS idx_tickets_notified
@@ -182,6 +194,102 @@ class Database:
         with self._connect() as conn:
             rows = conn.execute(query, params).fetchall()
         return [dict(row) for row in rows]
+
+    def query_tickets(self, site=None, notification_status=None, limit=100):
+        query = "SELECT * FROM tickets WHERE 1 = 1"
+        params = []
+        if site:
+            query += " AND site = ?"
+            params.append(site)
+        if notification_status:
+            query += " AND notification_status = ?"
+            params.append(notification_status)
+        query += " ORDER BY found_at DESC LIMIT ?"
+        params.append(limit)
+
+        with self._connect() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_crawl_runs(self, site=None, limit=100):
+        query = "SELECT * FROM crawl_runs"
+        params = []
+        if site:
+            query += " WHERE site = ?"
+            params.append(site)
+        query += " ORDER BY start_time DESC LIMIT ?"
+        params.append(limit)
+
+        with self._connect() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_summary(self):
+        with self._connect() as conn:
+            ticket_count = conn.execute("SELECT COUNT(*) FROM tickets").fetchone()[0]
+            notified_count = conn.execute(
+                "SELECT COUNT(*) FROM tickets WHERE notification_status = 'sent'"
+            ).fetchone()[0]
+            crawl_count = conn.execute("SELECT COUNT(*) FROM crawl_runs").fetchone()[0]
+        return {
+            "tickets": ticket_count,
+            "notified": notified_count,
+            "crawl_runs": crawl_count,
+        }
+
+    def upsert_scheduled_job(self, job_id, site, url=None, interval_hours=2, enabled=True):
+        now = datetime.now(UTC).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO scheduled_jobs (
+                    id, site, url, interval_hours, enabled, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    site = excluded.site,
+                    url = excluded.url,
+                    interval_hours = excluded.interval_hours,
+                    enabled = excluded.enabled,
+                    updated_at = excluded.updated_at
+                """,
+                (job_id, site, url, interval_hours, int(enabled), now, now),
+            )
+
+    def list_scheduled_jobs(self, enabled=None):
+        query = "SELECT * FROM scheduled_jobs"
+        params = []
+        if enabled is not None:
+            query += " WHERE enabled = ?"
+            params.append(int(enabled))
+        query += " ORDER BY created_at DESC"
+        with self._connect() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def delete_scheduled_job(self, job_id):
+        with self._connect() as conn:
+            conn.execute("DELETE FROM scheduled_jobs WHERE id = ?", (job_id,))
+
+    def update_scheduled_job_status(self, job_id, status):
+        with self._connect() as conn:
+            conn.execute(
+                """
+                UPDATE scheduled_jobs
+                SET last_run_at = ?, last_status = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    datetime.now(UTC).isoformat(),
+                    status,
+                    datetime.now(UTC).isoformat(),
+                    job_id,
+                ),
+            )
+
+    def clear_url_cache(self):
+        with self._connect() as conn:
+            conn.execute("DELETE FROM url_visited")
 
     @staticmethod
     def _to_json(value):

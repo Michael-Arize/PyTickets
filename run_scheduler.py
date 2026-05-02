@@ -12,7 +12,9 @@ def main():
     interval_hours = float(os.environ.get("PYTICKETS_SCHEDULE_INTERVAL_HOURS", "2"))
 
     scheduler = CrawlerScheduler()
-    scheduler.schedule_site(site, url=url, interval_hours=interval_hours)
+    scheduler.load_persisted_jobs()
+    if not scheduler.get_job_status(f"crawl_{site}"):
+        scheduler.schedule_site(site, url=url, interval_hours=interval_hours)
     scheduler.start()
 
     try:

@@ -14,6 +14,18 @@ Phase 1 is now implemented in code:
 - Error classification: `ticketCrawler/utils/error_handler.py`
 - Manual purchase workflow: `tickets_refactored` sends ticket links and stops without reserving or buying
 
+## Phase 2 Implementation Status
+
+Phase 2 is now implemented in code:
+
+- REST API and dashboard: `ticketCrawler/api/app.py`
+- Docker deployment: `Dockerfile`, `docker-compose.yml`, `.dockerignore`
+- Proxy rotation: `ticketCrawler/proxies/`
+- Scheduler persistence and overlap protection: `ticketCrawler/scheduler/job_manager.py`
+- Batch notification mode: `PYTICKETS_NOTIFY_MODE=first|batch`
+- Central env loading: `ticketCrawler/config/app_config.py` and `.env.example`
+- Legacy spiders deprecated as Python 3 compatibility stubs
+
 ---
 
 ## 🎯 Vision

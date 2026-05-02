@@ -111,8 +111,11 @@ class FakeScheduler:
 
 
 class TestCrawlerScheduler:
-    def test_schedule_site_with_injected_scheduler(self):
-        scheduler = CrawlerScheduler(scheduler=FakeScheduler())
+    def test_schedule_site_with_injected_scheduler(self, tmp_path):
+        scheduler = CrawlerScheduler(
+            scheduler=FakeScheduler(),
+            database=Database(tmp_path / "tickets.db")
+        )
 
         job = scheduler.schedule_site("dutch_tickets", interval_hours=3)
         scheduler.start()

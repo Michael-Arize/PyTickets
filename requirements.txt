@@ -4,3 +4,6 @@ requests
 scrapy-random-useragent
 pytest
 APScheduler
+fastapi
+uvicorn
+pydantic

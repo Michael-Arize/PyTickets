@@ -14,13 +14,16 @@ import time
 import scrapy
 from scrapy.exceptions import CloseSpider
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 from ticketCrawler.adapters.factory import AdapterFactory
 from ticketCrawler.auth.factory import AuthenticatorFactory
+from ticketCrawler.config.app_config import config
 from ticketCrawler.config.config_loader import ConfigLoader
 from ticketCrawler.database import Database
 from ticketCrawler.filters.factory import FilterFactory
 from ticketCrawler.notifications.manager import NotificationFactory, NotificationManager
+from ticketCrawler.proxies import ProxyManager
 from ticketCrawler.utils.error_handler import ErrorHandler
 from ticketCrawler.utils.helpers import TextHelper
 from ticketCrawler.utils.logger import LoggerFactory
@@ -60,18 +63,21 @@ class RefactoredTicketsSpider(scrapy.Spider):
 
         self.notification_manager = self._setup_notifications()
         self.ticket_filter = self._setup_filters()
+        self.notify_mode = config.notify_mode
+        self.debug_dir = config.debug_dir
 
         self.url_cache = URLCache(
-            cache_path=os.environ.get('PYTICKETS_URL_CACHE', 'data/url_cache.json'),
+            cache_path=config.url_cache_path,
             ttl_days=int(os.environ.get('PYTICKETS_URL_CACHE_TTL_DAYS', '30'))
         )
-        self.database = Database(os.environ.get('PYTICKETS_DB_PATH', 'data/pytickets.db'))
+        self.database = Database(config.database_path)
         self.crawl_run_id = self.database.start_crawl_run(site)
         self.tickets_found = 0
         self.tickets_notified = 0
         self.errors = []
 
-        self.browser = webdriver.Chrome()
+        self.proxy_manager = ProxyManager.from_env()
+        self.browser = self._create_browser()
         self.browser.get(self.base_url)
 
         if self.authenticator:
@@ -126,6 +132,14 @@ class RefactoredTicketsSpider(scrapy.Spider):
             manager.add_notifier(telegram_notifier)
 
         return manager
+
+    def _create_browser(self):
+        """Create Selenium browser, applying a configured proxy if present."""
+        options = Options()
+        proxy = self.proxy_manager.get_next_proxy()
+        if proxy:
+            options.add_argument(f"--proxy-server={proxy}")
+        return webdriver.Chrome(options=options)
 
     def _setup_filters(self):
         """Setup ticket filters from environment variables."""
@@ -204,7 +218,7 @@ class RefactoredTicketsSpider(scrapy.Spider):
             self._save_debug_html(response.body, 'error_visit_sold.html')
 
     def parse(self, response):
-        """Parse ticket listing page and send the first new matching ticket link."""
+        """Parse ticket listing page and send matching manual purchase links."""
         self.iteration += 1
         self.logger.info(f"Parse iteration #{self.iteration}")
 
@@ -238,6 +252,7 @@ class RefactoredTicketsSpider(scrapy.Spider):
             tickets = self.adapter.extract_tickets(response)
             self.logger.info(f"Found {len(tickets)} ticket(s)")
             self.tickets_found += len(tickets)
+            pending_notifications = []
 
             for ticket in tickets:
                 try:
@@ -256,24 +271,11 @@ class RefactoredTicketsSpider(scrapy.Spider):
                         continue
 
                     self.database.save_ticket(ticket_data)
-                    self.logger.info(f"Sending manual purchase link: {ticket_url}")
-                    results = self.notification_manager.notify_ticket_found(
-                        ticket_data,
-                        subject="PyTickets: Ticket link found"
-                    )
-                    notification_sent = any(results.values()) if results else False
-                    status = "sent" if notification_sent else "not_configured"
-                    self.database.mark_ticket_notified(ticket_url, status=status)
+                    pending_notifications.append(ticket_data)
 
-                    if notification_sent:
-                        self.tickets_notified += 1
-                        self.database.mark_url_visited(ticket_url, ticket_data)
-                        self.url_cache.mark_visited(ticket_url, ticket_data)
-                        self.successful = True
-                        self.url_cache.save_to_disk()
+                    if self.notify_mode != "batch":
+                        self._send_ticket_notifications(pending_notifications)
                         raise CloseSpider("ticket_links_sent")
-
-                    self.logger.warning(f"Ticket link was not sent; leaving URL retryable: {ticket_url}")
 
                 except CloseSpider:
                     raise
@@ -281,6 +283,10 @@ class RefactoredTicketsSpider(scrapy.Spider):
                     self.logger.error(f"Error processing ticket: {str(e)}")
                     self._record_error(e)
                     continue
+
+            if pending_notifications and self.notify_mode == "batch":
+                self._send_ticket_notifications(pending_notifications)
+                raise CloseSpider("ticket_links_sent")
 
         except CloseSpider:
             raise
@@ -306,6 +312,69 @@ class RefactoredTicketsSpider(scrapy.Spider):
             }
         }
 
+    def _send_ticket_notifications(self, tickets):
+        """Send one or more ticket links and mark sent links as visited."""
+        if len(tickets) == 1:
+            results = self.notification_manager.notify_ticket_found(
+                tickets[0],
+                subject="PyTickets: Ticket link found"
+            )
+        else:
+            message = self._format_batch_message(tickets)
+            results = self.notification_manager.notify(
+                message,
+                subject=f"PyTickets: {len(tickets)} ticket links found",
+                html=self._format_batch_html(tickets),
+            )
+
+        notification_sent = any(results.values()) if results else False
+
+        for ticket_data in tickets:
+            ticket_url = ticket_data["url"]
+            status = "sent" if notification_sent else "not_configured"
+            self.database.mark_ticket_notified(ticket_url, status=status)
+
+            if notification_sent:
+                self.tickets_notified += 1
+                self.database.mark_url_visited(ticket_url, ticket_data)
+                self.url_cache.mark_visited(ticket_url, ticket_data)
+            else:
+                self.logger.warning(f"Ticket link was not sent; leaving URL retryable: {ticket_url}")
+
+        if notification_sent:
+            self.successful = True
+            self.url_cache.save_to_disk()
+
+    @staticmethod
+    def _format_batch_message(tickets):
+        lines = ["Ticket links found:", ""]
+        for index, ticket in enumerate(tickets, start=1):
+            lines.extend([
+                f"{index}. {ticket.get('url')}",
+                f"   Price: {ticket.get('price', 'N/A')}",
+                f"   Seat: {ticket.get('seat_type', 'N/A')}",
+                "",
+            ])
+        return "\n".join(lines)
+
+    @staticmethod
+    def _format_batch_html(tickets):
+        rows = []
+        for ticket in tickets:
+            rows.append(
+                "<tr>"
+                f"<td><a href=\"{ticket.get('url')}\">Open Ticket</a></td>"
+                f"<td>{ticket.get('price', 'N/A')}</td>"
+                f"<td>{ticket.get('seat_type', 'N/A')}</td>"
+                "</tr>"
+            )
+        return (
+            "<html><body><h2>Ticket links found</h2>"
+            "<table border=\"1\" cellpadding=\"8\">"
+            "<tr><th>Link</th><th>Price</th><th>Seat</th></tr>"
+            f"{''.join(rows)}</table></body></html>"
+        )
+
     def _is_duplicate_ticket(self, ticket_url):
         """Check both JSON cache and SQLite history for a duplicate URL."""
         return (
@@ -325,9 +394,11 @@ class RefactoredTicketsSpider(scrapy.Spider):
     def _save_debug_html(self, html_body, filename='debug.html'):
         """Save HTML for debugging."""
         try:
-            with open(filename, 'wb') as f:
+            os.makedirs(self.debug_dir, exist_ok=True)
+            path = os.path.join(self.debug_dir, filename)
+            with open(path, 'wb') as f:
                 f.write(html_body)
-            self.logger.info(f"Saved debug HTML: {filename}")
+            self.logger.info(f"Saved debug HTML: {path}")
         except Exception as e:
             self.logger.warning(f"Could not save debug HTML: {str(e)}")
 
