@@ -59,7 +59,9 @@ class DutchTicketsAdapter(BaseAdapter):
         Returns:
             bool: True if tickets available, False if no tickets or rate limited
         """
-        body = response.body if hasattr(response, 'body') else response
+        body = response.text if hasattr(response, 'text') else response
+        if isinstance(body, bytes):
+            body = body.decode('utf-8', errors='ignore')
         
         # Check for no tickets text
         no_tickets_text = self.selectors.get('no_tickets_text', [])
@@ -187,7 +189,9 @@ class DutchTicketsAdapter(BaseAdapter):
             bool: True if rate limited
         """
         rate_limit_text = self.selectors.get('rate_limit_text', 'Oeps, iets te vaak vernieuwd')
-        body = response.body if hasattr(response, 'body') else response
+        body = response.text if hasattr(response, 'text') else response
+        if isinstance(body, bytes):
+            body = body.decode('utf-8', errors='ignore')
         return rate_limit_text in body
     
     def has_facebook_error(self, browser):

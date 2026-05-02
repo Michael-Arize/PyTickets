@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Quantity-based ticket filter."""
-from .base_filter import BaseFilter
+from ..base_filter import BaseFilter
 
 
 class QuantityFilter(BaseFilter):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Price-based ticket filter."""
-from .base_filter import BaseFilter
+from ..base_filter import BaseFilter
 
 
 class PriceFilter(BaseFilter):

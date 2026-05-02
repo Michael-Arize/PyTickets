@@ -144,7 +144,7 @@ class EmailNotifier(BaseNotifier):
                     <tr><td>Quantity:</td><td>{ticket_data.get('quantity', 'N/A')}</td></tr>
                     <tr><td>URL:</td><td><a href="{ticket_data.get('url', '#')}">View Ticket</a></td></tr>
                 </table>
-                <p><a href="{ticket_data.get('url', '#')}">Reserve Now</a></p>
+                <p><a href="{ticket_data.get('url', '#')}">Open Ticket Link</a></p>
             </body>
         </html>
         """

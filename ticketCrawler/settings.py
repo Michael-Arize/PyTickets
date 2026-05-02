@@ -65,6 +65,7 @@ DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     'random_useragent.RandomUserAgentMiddleware': 400,
     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 100,
+    'ticketCrawler.proxies.middleware.ProxyRotationMiddleware': 350,
 }
 
 # Retry many times since proxies often fail

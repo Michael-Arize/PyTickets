@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Date-based ticket filter."""
 from datetime import datetime
-from .base_filter import BaseFilter
+from ..base_filter import BaseFilter
 
 
 class DateFilter(BaseFilter):
