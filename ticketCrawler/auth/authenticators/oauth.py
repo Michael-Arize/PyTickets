@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """OAuth authenticator for third-party providers."""
-from .base_authenticator import BaseAuthenticator
+from ..base_authenticator import BaseAuthenticator
 
 
 class OAuthAuthenticator(BaseAuthenticator):

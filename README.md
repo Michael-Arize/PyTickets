@@ -42,6 +42,42 @@ The project contains two spiders, located in the ticketCrawler/spiders directory
 scrapy crawl tickets -a url=<url_to_event_page>
 ```
 
+### Refactored Manual-Purchase Workflow
+The newer spider is `tickets_refactored`. It finds matching ticket links, skips URLs that were already seen, saves crawl history to SQLite, sends the ticket link through configured notifications, and then stops. It does not reserve or buy tickets automatically.
+
+```
+scrapy crawl tickets_refactored -a site=dutch_tickets -a url=<url_to_event_page>
+```
+
+Email is the primary notification channel for manual purchase links:
+
+```
+export EMAIL_PROVIDER=smtp
+export EMAIL_SENDER=you@example.com
+export EMAIL_RECIPIENT=customer@example.com
+export SMTP_HOST=smtp.example.com
+export SMTP_PORT=587
+export SMTP_USER=you@example.com
+export SMTP_PASSWORD=<password>
+```
+
+Phase 1 persistence can be customized with:
+
+```
+export PYTICKETS_DB_PATH=data/pytickets.db
+export PYTICKETS_URL_CACHE=data/url_cache.json
+export PYTICKETS_URL_CACHE_TTL_DAYS=30
+```
+
+Scheduled crawling uses APScheduler:
+
+```
+export PYTICKETS_SCHEDULE_SITE=dutch_tickets
+export PYTICKETS_SCHEDULE_URL=<url_to_event_page>
+export PYTICKETS_SCHEDULE_INTERVAL_HOURS=2
+python run_scheduler.py
+```
+
 ### Demo
 ![Screen Capture](https://github.com/Nedervino/TicketCrawler/blob/master/screenCapture.gif?raw=true)
 

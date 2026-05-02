@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Facebook OAuth authenticator."""
-from .base_authenticator import BaseAuthenticator
+from ..base_authenticator import BaseAuthenticator
 
 
 class FacebookAuthenticator(BaseAuthenticator):

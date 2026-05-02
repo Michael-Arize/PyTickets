@@ -1,0 +1,6 @@
+scrapy
+selenium
+requests
+scrapy-random-useragent
+pytest
+APScheduler

@@ -4,6 +4,16 @@
 
 **Scope**: All suggested features EXCEPT purchase automation (human purchase decision)
 
+## Phase 1 Implementation Status
+
+Phase 1 is now implemented in code:
+
+- URL deduplication: `ticketCrawler/utils/url_cache.py`
+- SQLite persistence: `ticketCrawler/database/sqlite_store.py`
+- APScheduler integration: `ticketCrawler/scheduler/job_manager.py` and `run_scheduler.py`
+- Error classification: `ticketCrawler/utils/error_handler.py`
+- Manual purchase workflow: `tickets_refactored` sends ticket links and stops without reserving or buying
+
 ---
 
 ## 🎯 Vision

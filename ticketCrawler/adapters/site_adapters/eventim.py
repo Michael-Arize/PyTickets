@@ -50,7 +50,9 @@ class EventimAdapter(BaseAdapter):
         Returns:
             bool: True if tickets available
         """
-        body = response.body if hasattr(response, 'body') else response
+        body = response.text if hasattr(response, 'text') else response
+        if isinstance(body, bytes):
+            body = body.decode('utf-8', errors='ignore')
         no_tickets_text = self.selectors.get('no_tickets_text', [])
         
         for text in no_tickets_text:
@@ -179,7 +181,9 @@ class EventimAdapter(BaseAdapter):
             'Retry-After'
         ]
         
-        body = response.body if hasattr(response, 'body') else response
+        body = response.text if hasattr(response, 'text') else response
+        if isinstance(body, bytes):
+            body = body.decode('utf-8', errors='ignore')
         
         for text in rate_limit_texts:
             if text in body:
