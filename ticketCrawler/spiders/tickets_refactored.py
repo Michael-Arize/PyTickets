@@ -251,14 +251,8 @@ class RefactoredTicketsSpider(scrapy.Spider):
             if self.adapter.is_rate_limited(response):
                 self.app_logger.warning("Rate limited! Notifying and pausing")
                 self.notification_manager.notify("Rate limited. Waiting for manual reset.")
-                input('Press ENTER to continue after rate limit passes')
-
-                yield scrapy.Request(
-                    url=self.first_sold_ticket_url,
-                    callback=self.parse,
-                    dont_filter=True
-                )
-                return
+                self._record_error("rate limit or access block detected")
+                raise CloseSpider("rate_limited")
 
             tickets = self.adapter.extract_tickets(response)
             self.app_logger.info(f"Found {len(tickets)} ticket(s)")
