@@ -90,6 +90,17 @@ Then open `http://localhost:8000`.
 The API exposes health, sites, tickets, crawl runs, jobs, one-off crawl starts,
 cache clearing, and notification tests under `/api/...`.
 
+### Supported Sites
+
+Current first-class adapters:
+
+- `dutch_tickets`
+- `eventim`
+- `ticketmaster`
+- `seatgeek`
+
+See `ADDING_NEW_SITE.md` for the adapter/config pattern used to add more sites.
+
 ### Demo
 ![Screen Capture](https://github.com/Nedervino/TicketCrawler/blob/master/screenCapture.gif?raw=true)
 

@@ -1,0 +1,31 @@
+{
+  "name": "SeatGeek",
+  "base_url": "https://seatgeek.com",
+  "auth": {
+    "type": "none",
+    "credentials": {}
+  },
+  "selectors": {
+    "ticket_array_xpath": "//a[contains(@href, '/tickets/') or contains(@href, 'seatgeek.com')]",
+    "ticket_link_xpath": "./@href",
+    "no_tickets_text": [
+      "sold out",
+      "no tickets available",
+      "no listings"
+    ],
+    "rate_limit_text": [
+      "too many requests",
+      "access denied",
+      "captcha"
+    ]
+  },
+  "api": {
+    "events_endpoint": "https://api.seatgeek.com/2/events",
+    "client_id": "env_optional:SEATGEEK_CLIENT_ID"
+  },
+  "proxy_required": false,
+  "rate_limit": {
+    "min_delay": 1.5,
+    "max_delay": 4.0
+  }
+}

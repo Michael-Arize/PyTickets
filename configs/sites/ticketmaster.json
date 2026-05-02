@@ -1,0 +1,31 @@
+{
+  "name": "Ticketmaster",
+  "base_url": "https://www.ticketmaster.com",
+  "auth": {
+    "type": "none",
+    "credentials": {}
+  },
+  "selectors": {
+    "ticket_array_xpath": "//a[contains(@href, '/event/') or contains(@href, 'ticketmaster.com/event')]",
+    "ticket_link_xpath": "./@href",
+    "no_tickets_text": [
+      "sold out",
+      "no tickets available",
+      "currently unavailable"
+    ],
+    "rate_limit_text": [
+      "pardon the interruption",
+      "too many requests",
+      "access denied"
+    ]
+  },
+  "api": {
+    "events_endpoint": "https://app.ticketmaster.com/discovery/v2/events.json",
+    "apikey": "env_optional:TICKETMASTER_API_KEY"
+  },
+  "proxy_required": false,
+  "rate_limit": {
+    "min_delay": 2.0,
+    "max_delay": 5.0
+  }
+}
